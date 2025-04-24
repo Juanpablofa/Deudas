@@ -8,38 +8,43 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         :root {
-            --primary-color: #4CAF50;
-            --secondary-color: #2196F3;
-            --danger-color: #f44336;
-            --warning-color: #ff9800;
-            --light-gray: #f5f5f5;
-            --dark-gray: #333;
-            --border-radius: 8px;
-            --box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-        }
+        --primary-color: #4CAF50;
+        --secondary-color: #2196F3;
+        --danger-color: #f44336;
+        --warning-color: #ff9800;
+        --light-gray: #f5f5f5;
+        --dark-gray: #333;
+        --border-radius: 8px;
+        --box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        --background-color: #ffebee; /* Color pastel rosado claro */
+        --container-bg: rgba(255, 255, 255, 0.9); /* Fondo del contenedor con transparencia */
+    }
         
         * {
             box-sizing: border-box;
         }
         
-        body { 
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
-            margin: 0;
-            padding: 10px;
-            background: var(--light-gray);
-            color: var(--dark-gray);
-            font-size: 14px;
-            line-height: 1.5;
-        }
+        body {
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+        margin: 0;
+        padding: 10px;
+        background: linear-gradient(135deg, #ffebee 0%, #fce4ec 50%, #f8bbd0 100%);
+        color: var(--dark-gray);
+        font-size: 14px;
+        line-height: 1.5;
+        min-height: 100vh;
+    }
         
         .container { 
-            max-width: 100%;
-            margin: 0 auto; 
-            background: white; 
-            padding: 15px; 
-            border-radius: var(--border-radius); 
-            box-shadow: var(--box-shadow); 
-        }
+        max-width: 100%;
+        margin: 0 auto; 
+        background: var(--container-bg); /* Fondo semitransparente */
+        padding: 15px; 
+        border-radius: var(--border-radius); 
+        box-shadow: var(--box-shadow);
+        backdrop-filter: blur(5px); /* Efecto de desenfoque para mejor legibilidad */
+    }
+
         
         h1, h2, h3, h4 {
             margin-top: 0;
@@ -413,7 +418,7 @@
 </head>
 <body>
     <div class="container">
-        <h1>📊 Sistema de Gestión de Gastos y Compras</h1>
+        <h1>📊 Gestión de Gastos y Compras</h1>
         
         <div class="button-group">
             <button onclick="openImportModal()" class="btn-secondary">📥 Importar Excel</button>
@@ -551,20 +556,51 @@
                     </div>
                     
                     <div class="form-group">
-                        <label for="proveedor">Proveedor/Empresa:</label>
-                        <input type="text" id="proveedor" required placeholder="Nombre del proveedor">
-                    </div>
-                    
-                    <div class="grid-2">
-                        <div class="form-group">
-                            <label for="comprador">Comprador:</label>
-                            <input type="text" id="comprador" required placeholder="Nombre del comprador">
-                        </div>
-                        <div class="form-group">
-                            <label for="campana">Campaña:</label>
-                            <input type="text" id="campana" placeholder="Nombre de la campaña">
-                        </div>
-                    </div>
+    <label for="proveedor">Proveedor/Empresa:</label>
+    <input type="text" id="proveedor" list="proveedoresList" required placeholder="Nombre del proveedor">
+    <datalist id="proveedoresList">
+        <option value="Natura">
+        <option value="Natura Online">
+        <option value="Yanbal">
+        <option value="Yanbal Online">
+        <option value="Belcorp">
+        <option value="Belcorp Online">
+    </datalist>
+</div>
+
+<div class="grid-2">
+    <div class="form-group">
+        <label for="comprador">Comprador:</label>
+        <input type="text" id="comprador" list="compradoresList" required placeholder="Nombre del comprador">
+        <datalist id="compradoresList">
+            <option value="Juan Pablo">
+            <option value="Sebastian">
+        </datalist>
+    </div>
+    <div class="form-group">
+        <label for="campana">Campaña:</label>
+        <select id="campana" onchange="if(this.value=='otra'){this.nextElementSibling.style.display='inline-block';this.nextElementSibling.focus();}else{this.nextElementSibling.style.display='none';}">
+            <option value="">Seleccione campaña</option>
+            <option value="1">1</option>
+            <option value="2">2</option>
+            <option value="3">3</option>
+            <option value="4">4</option>
+            <option value="5">5</option>
+            <option value="6">6</option>
+            <option value="7">7</option>
+            <option value="8">8</option>
+            <option value="9">9</option>
+            <option value="10">10</option>
+            <option value="11">11</option>
+            <option value="12">12</option>
+            <option value="13">13</option>
+            <option value="14">14</option>
+            <option value="15">15</option>
+            <option value="otra">Otra...</option>
+        </select>
+        <input type="text" id="campanaManual" style="display:none; margin-top:5px;" placeholder="Ingrese campaña">
+    </div>
+</div>
                     
                     <div class="form-group">
                         <label for="monto">Monto Total:</label>
@@ -2005,8 +2041,15 @@ function updateTopBuyers() {
                 }
                 
                 // Obtener otros campos
-                const campana = document.getElementById('campana').value.trim();
-                const descripcion = document.getElementById('descripcion').value.trim();
+                let campana;
+    const campanaSelect = document.getElementById('campana');
+    if (campanaSelect.value === 'otra') {
+        campana = document.getElementById('campanaManual').value.trim();
+    } else {
+        campana = campanaSelect.value.trim();
+    }
+    
+    const descripcion = document.getElementById('descripcion').value.trim();
                 
                 // Verificar si estamos editando una compra existente
                 const editingPurchaseId = document.getElementById('editingPurchaseId').value;
@@ -2146,6 +2189,26 @@ function updateTopBuyers() {
                     document.getElementById('monto').value = compra.monto;
                     document.getElementById('descripcion').value = compra.descripcion || '';
                     
+// Manejar campo de campaña
+    if (compra.campana) {
+        const campanaSelect = document.getElementById('campana');
+        const campanaManual = document.getElementById('campanaManual');
+        
+        // Verificar si el valor está en las opciones predefinidas
+        const opcionPredefinida = Array.from(campanaSelect.options).find(
+            opt => opt.value === compra.campana
+        );
+        
+        if (opcionPredefinida) {
+            campanaSelect.value = compra.campana;
+            campanaManual.style.display = 'none';
+        } else {
+            campanaSelect.value = 'otra';
+            campanaManual.value = compra.campana;
+            campanaManual.style.display = 'inline-block';
+        }
+    }
+
                     // Convertir fechas al formato de input date (YYYY-MM-DD)
                     const fechaEmision = new Date(compra.fechaEmisionCompleta);
                     fechaEmision.setMinutes(fechaEmision.getMinutes() + fechaEmision.getTimezoneOffset());
