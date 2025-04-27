@@ -3,15 +3,16 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Sistema de Gestión de Gastos y Compras</title>
+    <title>Compras Facturas</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         :root {
-        --primary-color: #4CAF50;
-        --secondary-color: #2196F3;
-        --danger-color: #f44336;
-        --warning-color: #ff9800;
+    --primary-color: #078aa0;    /* Morado oscuro */
+    --secondary-color: #0bf96b;  /* Azul índigo */
+    --danger-color: #E91E63;     /* Rosa */
+    --warning-color: #FF5722;    /* Naranja oscuro */
+    --success-color: #4CAF50;    /* Verde (se mantiene) */
         --light-gray: #f5f5f5;
         --dark-gray: #333;
         --border-radius: 8px;
@@ -418,7 +419,7 @@
 </head>
 <body>
     <div class="container">
-        <h1>📊 Gestión de Gastos y Compras</h1>
+        <h1>📊 Compras Facturas</h1>
         
         <div class="button-group">
             <button onclick="openImportModal()" class="btn-secondary">📥 Importar Excel</button>
@@ -534,7 +535,7 @@
         <tbody id="topBuyersBody"></tbody>
     </table>
 </div>
-		
+
         </div>
 
 
@@ -598,6 +599,10 @@
             <option value="13">13</option>
             <option value="14">14</option>
             <option value="15">15</option>
+	    <option value="16">16</option>
+            <option value="17">17</option>
+            <option value="18">18</option>
+            <option value="19">19</option>	
             <option value="otra">Otra...</option>
         </select>
         <input type="text" id="campanaManual" style="display:none; margin-top:5px;" placeholder="Ingrese campaña">
