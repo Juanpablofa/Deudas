@@ -415,6 +415,8 @@
     color: white; 
 }
 
+
+
     </style>
 </head>
 <body>
@@ -431,54 +433,59 @@
         </div>
         
         <!-- Sección de Dashboard -->
-        <div id="dashboardSection" class="section" style="display: none;">
-            <h2>📊 Dashboard de Gastos</h2>
-            
-            <div class="period-selector">
-                <button onclick="updateDashboard('day')" class="btn-primary">Día</button>
-                <button onclick="updateDashboard('week')" class="btn-primary">Semana</button>
-                <button onclick="updateDashboard('month')" class="btn-primary">Mes</button>
-                <button onclick="updateDashboard('year')" class="btn-primary">Año</button>
-                <button onclick="updateDashboard('all')" class="btn-primary">Todo</button>
-            </div>
-            
-            <div class="date-selector" id="dateSelectorContainer" style="display: none;">
-                <div id="daySelector" style="display: none;">
-                    <label for="specificDay">Seleccionar día:</label>
-                    <input type="date" id="specificDay" onchange="updateSpecificPeriod('day')">
-                </div>
-                <div id="weekSelector" style="display: none;">
-                    <label for="specificWeek">Seleccionar semana:</label>
-                    <input type="week" id="specificWeek" onchange="updateSpecificPeriod('week')">
-                </div>
-                <div id="monthSelector" style="display: none;">
-                    <label for="specificMonth">Seleccionar mes:</label>
-                    <input type="month" id="specificMonth" onchange="updateSpecificPeriod('month')">
-                </div>
-                <div id="yearSelector" style="display: none;">
-                    <label for="specificYear">Seleccionar año:</label>
-                    <select id="specificYear" onchange="updateSpecificPeriod('year')"></select>
-                </div>
-            </div>
-            
-            <div class="stats-grid">
-                <div class="stat-card">
-                    <h3>Gastos Totales</h3>
-                    <div class="value" id="totalExpensesStat">$0</div>
-                </div>
-                <div class="stat-card">
-                    <h3>Compras Registradas</h3>
-                    <div class="value" id="totalPurchasesStat">0</div>
-                </div>
-                <div class="stat-card">
-                    <h3>Proveedores</h3>
-                    <div class="value" id="totalSuppliersStat">0</div>
-                </div>
-                <div class="stat-card">
-                    <h3>Gasto Promedio</h3>
-                    <div class="value" id="avgExpenseStat">$0</div>
-                </div>
-		<div class="stat-card">
+<div id="dashboardSection" class="section" style="display: none;">
+    <h2>📊 Dashboard de Gastos</h2>
+    
+    <div class="period-selector">
+        <button onclick="updateDashboard('day')" class="btn-primary">Día</button>
+        <button onclick="updateDashboard('week')" class="btn-primary">Semana</button>
+        <button onclick="updateDashboard('month')" class="btn-primary">Mes</button>
+        <button onclick="updateDashboard('year')" class="btn-primary">Año</button>
+        <button onclick="updateDashboard('all')" class="btn-primary">Todo</button>
+    </div>
+    
+    <div class="date-selector" id="dateSelectorContainer" style="display: none;">
+        <div id="daySelector" style="display: none;">
+            <label for="specificDay">Seleccionar día:</label>
+            <input type="date" id="specificDay" onchange="updateSpecificPeriod('day')">
+        </div>
+        <div id="weekSelector" style="display: none;">
+            <label for="specificWeek">Seleccionar semana:</label>
+            <input type="week" id="specificWeek" onchange="updateSpecificPeriod('week')">
+        </div>
+        <div id="monthSelector" style="display: none;">
+            <label for="specificMonth">Seleccionar mes:</label>
+            <input type="month" id="specificMonth" onchange="updateSpecificPeriod('month')">
+        </div>
+        <div id="yearSelector" style="display: none;">
+            <label for="specificYear">Seleccionar año:</label>
+            <select id="specificYear" onchange="updateSpecificPeriod('year')"></select>
+        </div>
+
+     </div>
+
+
+
+    
+    <div class="stats-grid">
+        <div class="stat-card">
+            <h3>Gastos Totales</h3>
+            <div class="value" id="totalExpensesStat">$0</div>
+        </div>
+        <div class="stat-card">
+            <h3>Compras Registradas</h3>
+            <div class="value" id="totalPurchasesStat">0</div>
+        </div>
+        <div class="stat-card">
+            <h3>Proveedores</h3>
+            <div class="value" id="totalSuppliersStat">0</div>
+        </div>
+        <div class="stat-card">
+            <h3>Gasto Promedio</h3>
+            <div class="value" id="avgExpenseStat">$0</div>
+        </div>
+
+<div class="stat-card">
     <h3>Monto Pendiente por pagar</h3>
     <div class="value" id="totalPendingStat">$0</div>
 </div>
@@ -489,12 +496,15 @@
     <div class="text-muted" id="avgDailyExpenseSubtitle"></div>
 </div>
 
-            </div>
-            
-            <div class="chart-container">
-                <canvas id="expensesChart"></canvas>
-            </div>
-            
+
+    </div>
+    
+    <div class="chart-container">
+        <canvas id="expensesChart"></canvas>
+    </div>
+    
+    <div class="grid-2" style="gap: 20px; margin-top: 20px;">
+        <div>
             <h3>🏆 Top 10 Proveedores</h3>
             <div class="table-responsive">
                 <table id="topSuppliersTable">
@@ -508,7 +518,9 @@
                     <tbody id="topSuppliersBody"></tbody>
                 </table>
             </div>
-            
+        </div>
+        
+        <div>
             <h3>📊 Compras por Campaña</h3>
             <div class="table-responsive">
                 <table id="campaignExpensesTable">
@@ -522,21 +534,25 @@
                     <tbody id="campaignExpensesBody"></tbody>
                 </table>
             </div>
-<h3>🏆 Top 10 Compradores</h3>
-<div class="table-responsive">
-    <table id="topBuyersTable">
-        <thead>
-            <tr>
-                <th>Comprador</th>
-                <th>Compras</th>
-                <th>Total Gastado</th>
-            </tr>
-        </thead>
-        <tbody id="topBuyersBody"></tbody>
-    </table>
-</div>
-
         </div>
+    </div>
+    
+    <div style="margin-top: 20px;">
+        <h3>📅 Últimas Compras</h3>
+        <div class="table-responsive">
+            <table id="recentPurchasesTable">
+                <thead>
+                    <tr>
+                        <th>Fecha</th>
+                        <th>Proveedor</th>
+                        <th>Monto</th>
+                    </tr>
+                </thead>
+                <tbody id="recentPurchasesBody"></tbody>
+            </table>
+        </div>
+    </div>
+</div>
 
 
         
@@ -900,79 +916,87 @@
             }
 
             function updateDashboard(period, specificDate = null) {
-                currentPeriod = period;
-                currentSpecificDate = specificDate || null;
-                
-                // Mostrar/ocultar selectores de fecha específica
-                document.getElementById('dateSelectorContainer').style.display = 'none';
-                document.getElementById('daySelector').style.display = 'none';
-                document.getElementById('weekSelector').style.display = 'none';
-                document.getElementById('monthSelector').style.display = 'none';
-                document.getElementById('yearSelector').style.display = 'none';
-                
-                if (period === 'day') {
-                    document.getElementById('dateSelectorContainer').style.display = 'flex';
-                    document.getElementById('daySelector').style.display = 'block';
-                } else if (period === 'week') {
-                    document.getElementById('dateSelectorContainer').style.display = 'flex';
-                    document.getElementById('weekSelector').style.display = 'block';
-                } else if (period === 'month') {
-                    document.getElementById('dateSelectorContainer').style.display = 'flex';
-                    document.getElementById('monthSelector').style.display = 'block';
-                } else if (period === 'year') {
-                    document.getElementById('dateSelectorContainer').style.display = 'flex';
-                    document.getElementById('yearSelector').style.display = 'block';
-                }
-                
-                updateExpensesChart(period, specificDate);
-                updateStats(period, specificDate);
-                updateTopSuppliers();
-		updateTopBuyers(); 
-                updateCampaignExpenses();
-            }
+    currentPeriod = period;
+    currentSpecificDate = specificDate || null;
+    
+    // Mostrar/ocultar selectores de fecha específica
+    document.getElementById('dateSelectorContainer').style.display = 'none';
+    document.getElementById('daySelector').style.display = 'none';
+    document.getElementById('weekSelector').style.display = 'none';
+    document.getElementById('monthSelector').style.display = 'none';
+    document.getElementById('yearSelector').style.display = 'none';
+    
+    if (period === 'day') {
+        document.getElementById('dateSelectorContainer').style.display = 'flex';
+        document.getElementById('daySelector').style.display = 'block';
+    } else if (period === 'week') {
+        document.getElementById('dateSelectorContainer').style.display = 'flex';
+        document.getElementById('weekSelector').style.display = 'block';
+    } else if (period === 'month') {
+        document.getElementById('dateSelectorContainer').style.display = 'flex';
+        document.getElementById('monthSelector').style.display = 'block';
+    } else if (period === 'year') {
+        document.getElementById('dateSelectorContainer').style.display = 'flex';
+        document.getElementById('yearSelector').style.display = 'block';
+    }
+    
+    updateExpensesChart(period, specificDate);
+    updateStats(period, specificDate);
+    updateTopSuppliers(period, specificDate);
+    updateCampaignExpenses(period, specificDate);
+    updateRecentPurchases(period, specificDate);
+}
             
-            function updateSpecificPeriod(period) {
-                currentPeriod = period;
-                
-                if (period === 'day') {
-                    const dayInput = document.getElementById('specificDay').value;
-                    if (dayInput) {
-                        const [year, month, day] = dayInput.split('-');
-                        currentSpecificDate = new Date(year, month - 1, day);
-                        currentSpecificDate.setHours(0, 0, 0, 0);
-                        
-                        updateExpensesChart(period, currentSpecificDate);
-                        updateStats(period, currentSpecificDate);
-                    }
-                } else if (period === 'week') {
-                    const weekInput = document.getElementById('specificWeek').value;
-                    if (weekInput) {
-                        const [year, week] = weekInput.split('-W');
-                        currentSpecificDate = getDateOfWeek(parseInt(week), parseInt(year));
-                        updateExpensesChart(period, currentSpecificDate);
-                        updateStats(period, currentSpecificDate);
-                    }
-                } else if (period === 'month') {
-                    const monthInput = document.getElementById('specificMonth').value;
-                    if (monthInput) {
-                        const [year, month] = monthInput.split('-');
-                        currentSpecificDate = new Date(year, parseInt(month) - 1, 1);
-                        updateExpensesChart(period, currentSpecificDate);
-                        updateStats(period, currentSpecificDate);
-                    }
-                } else if (period === 'year') {
-                    const yearInput = document.getElementById('specificYear').value;
-                    if (yearInput) {
-                        currentSpecificDate = new Date(yearInput, 0, 1);
-                        updateExpensesChart(period, currentSpecificDate);
-                        updateStats(period, currentSpecificDate);
-                    }
-                }
-                
-                updateTopSuppliers();
-                updateCampaignExpenses();
-            }
+           function updateSpecificPeriod(period) {
+    currentPeriod = period;
+    
+    if (period === 'day') {
+        const dayInput = document.getElementById('specificDay').value;
+        if (dayInput) {
+            const [year, month, day] = dayInput.split('-');
+            currentSpecificDate = new Date(year, month - 1, day);
+            currentSpecificDate.setHours(0, 0, 0, 0);
             
+            updateExpensesChart(period, currentSpecificDate);
+            updateStats(period, currentSpecificDate);
+            updateTopSuppliers(period, currentSpecificDate);
+            updateCampaignExpenses(period, currentSpecificDate);
+            updateRecentPurchases(period, currentSpecificDate);
+        }
+    } else if (period === 'week') {
+        const weekInput = document.getElementById('specificWeek').value;
+        if (weekInput) {
+            const [year, week] = weekInput.split('-W');
+            currentSpecificDate = getDateOfWeek(parseInt(week), parseInt(year));
+            updateExpensesChart(period, currentSpecificDate);
+            updateStats(period, currentSpecificDate);
+            updateTopSuppliers(period, currentSpecificDate);
+            updateCampaignExpenses(period, currentSpecificDate);
+            updateRecentPurchases(period, currentSpecificDate);
+        }
+    } else if (period === 'month') {
+        const monthInput = document.getElementById('specificMonth').value;
+        if (monthInput) {
+            const [year, month] = monthInput.split('-');
+            currentSpecificDate = new Date(year, parseInt(month) - 1, 1);
+            updateExpensesChart(period, currentSpecificDate);
+            updateStats(period, currentSpecificDate);
+            updateTopSuppliers(period, currentSpecificDate);
+            updateCampaignExpenses(period, currentSpecificDate);
+            updateRecentPurchases(period, currentSpecificDate);
+        }
+    } else if (period === 'year') {
+        const yearInput = document.getElementById('specificYear').value;
+        if (yearInput) {
+            currentSpecificDate = new Date(yearInput, 0, 1);
+            updateExpensesChart(period, currentSpecificDate);
+            updateStats(period, currentSpecificDate);
+            updateTopSuppliers(period, currentSpecificDate);
+            updateCampaignExpenses(period, currentSpecificDate);
+            updateRecentPurchases(period, currentSpecificDate);
+        }
+    }
+}
             function getDateOfWeek(week, year) {
                 const simple = new Date(year, 0, 1 + (week - 1) * 7);
                 const dow = simple.getDay();
@@ -1271,141 +1295,167 @@
     });
 }
 
-            function updateTopSuppliers() {
-                const supplierStats = {};
-                
-                const transaction = db.transaction(['compras'], 'readonly');
-                const store = transaction.objectStore('compras');
-                const request = store.getAll();
-                
-                request.onsuccess = function() {
-                    const compras = request.result || [];
-                    
-                    // Filtrar por período si es necesario
-                    let filteredCompras = compras;
-                    if (currentSpecificDate) {
-                        const now = currentSpecificDate;
-                        filteredCompras = compras.filter(c => {
-                            const compraDate = new Date(c.fechaEmision);
-                            
-                            if (currentPeriod === 'day') {
-                                return compraDate.getDate() === now.getDate() && 
-                                       compraDate.getMonth() === now.getMonth() && 
-                                       compraDate.getFullYear() === now.getFullYear();
-                            } else if (currentPeriod === 'week') {
-                                const startOfWeek = new Date(now);
-                                startOfWeek.setDate(now.getDate() - now.getDay() + (now.getDay() === 0 ? -6 : 1));
-                                const endOfWeek = new Date(startOfWeek);
-                                endOfWeek.setDate(startOfWeek.getDate() + 6);
-                                return compraDate >= startOfWeek && compraDate <= endOfWeek;
-                            } else if (currentPeriod === 'month') {
-                                return compraDate.getMonth() === now.getMonth() && 
-                                       compraDate.getFullYear() === now.getFullYear();
-                            } else if (currentPeriod === 'year') {
-                                return compraDate.getFullYear() === now.getFullYear();
-                            }
-                            return true;
-                        });
-                    }
-                    
-                    filteredCompras.forEach(compra => {
-                        if (!supplierStats[compra.proveedor]) {
-                            supplierStats[compra.proveedor] = {
-                                count: 0,
-                                total: 0
-                            };
-                        }
-                        
-                        supplierStats[compra.proveedor].count++;
-                        supplierStats[compra.proveedor].total += parseFloat(compra.monto);
-                    });
-                    
-                    const sortedSuppliers = Object.entries(supplierStats)
-                        .sort((a, b) => b[1].total - a[1].total)
-                        .slice(0, 10);
-                    
-                    const tbody = document.getElementById('topSuppliersBody');
-                    tbody.innerHTML = '';
-                    
-                    sortedSuppliers.forEach(([name, stats]) => {
-                        const row = document.createElement('tr');
-                        row.innerHTML = `
-                            <td>${name}</td>
-                            <td>${stats.count}</td>
-                            <td>$${stats.total.toFixed(2)}</td>
-                        `;
-                        tbody.appendChild(row);
-                    });
+           function updateTopSuppliers(period, specificDate = null) {
+    const supplierStats = {};
+    const now = specificDate || new Date();
+    
+    const transaction = db.transaction(['compras'], 'readonly');
+    const store = transaction.objectStore('compras');
+    const request = store.getAll();
+    
+    request.onsuccess = function() {
+        const compras = request.result || [];
+        
+        // Filtrar por período
+        let filteredCompras = filterByPeriod(compras, period, now);
+        
+        filteredCompras.forEach(compra => {
+            if (!supplierStats[compra.proveedor]) {
+                supplierStats[compra.proveedor] = {
+                    count: 0,
+                    total: 0
                 };
             }
+            
+            supplierStats[compra.proveedor].count++;
+            supplierStats[compra.proveedor].total += parseFloat(compra.monto);
+        });
+        
+        const sortedSuppliers = Object.entries(supplierStats)
+            .sort((a, b) => b[1].total - a[1].total)
+            .slice(0, 10);
+        
+        const tbody = document.getElementById('topSuppliersBody');
+        tbody.innerHTML = '';
+        
+        sortedSuppliers.forEach(([name, stats]) => {
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                <td>${name}</td>
+                <td>${stats.count}</td>
+                <td>$${stats.total.toFixed(2)}</td>
+            `;
+            tbody.appendChild(row);
+        });
+    };
+}
 
-            function updateCampaignExpenses() {
-                const campaignStats = {};
-                
-                const transaction = db.transaction(['compras'], 'readonly');
-                const store = transaction.objectStore('compras');
-                const request = store.getAll();
-                
-                request.onsuccess = function() {
-                    const compras = request.result || [];
-                    
-                    // Filtrar por período si es necesario
-                    let filteredCompras = compras;
-                    if (currentSpecificDate) {
-                        const now = currentSpecificDate;
-                        filteredCompras = compras.filter(c => {
-                            const compraDate = new Date(c.fechaEmision);
-                            
-                            if (currentPeriod === 'day') {
-                                return compraDate.getDate() === now.getDate() && 
-                                       compraDate.getMonth() === now.getMonth() && 
-                                       compraDate.getFullYear() === now.getFullYear();
-                            } else if (currentPeriod === 'week') {
-                                const startOfWeek = new Date(now);
-                                startOfWeek.setDate(now.getDate() - now.getDay() + (now.getDay() === 0 ? -6 : 1));
-                                const endOfWeek = new Date(startOfWeek);
-                                endOfWeek.setDate(startOfWeek.getDate() + 6);
-                                return compraDate >= startOfWeek && compraDate <= endOfWeek;
-                            } else if (currentPeriod === 'month') {
-                                return compraDate.getMonth() === now.getMonth() && 
-                                       compraDate.getFullYear() === now.getFullYear();
-                            } else if (currentPeriod === 'year') {
-                                return compraDate.getFullYear() === now.getFullYear();
-                            }
-                            return true;
-                        });
-                    }
-                    
-                    filteredCompras.forEach(compra => {
-                        const campaign = compra.campana || 'Sin Campaña';
-                        if (!campaignStats[campaign]) {
-                            campaignStats[campaign] = {
-                                count: 0,
-                                total: 0
-                            };
-                        }
-                        
-                        campaignStats[campaign].count++;
-                        campaignStats[campaign].total += parseFloat(compra.monto);
-                    });
-                    
-                    const sortedCampaigns = Object.entries(campaignStats)
-                        .sort((a, b) => b[1].total - a[1].total);
-                    
-                    const tbody = document.getElementById('campaignExpensesBody');
-                    tbody.innerHTML = '';
-                    
-                    sortedCampaigns.forEach(([name, stats]) => {
-                        const row = document.createElement('tr');
-                        row.innerHTML = `
-                            <td>${name}</td>
-                            <td>${stats.count}</td>
-                            <td>$${stats.total.toFixed(2)}</td>
-                        `;
-                        tbody.appendChild(row);
-                    });
+            function updateCampaignExpenses(period, specificDate = null) {
+    const campaignStats = {};
+    const now = specificDate || new Date();
+    
+    const transaction = db.transaction(['compras'], 'readonly');
+    const store = transaction.objectStore('compras');
+    const request = store.getAll();
+    
+    request.onsuccess = function() {
+        const compras = request.result || [];
+        
+        // Filtrar por período
+        let filteredCompras = filterByPeriod(compras, period, now);
+        
+        filteredCompras.forEach(compra => {
+            const campaign = compra.campana || 'Sin Campaña';
+            if (!campaignStats[campaign]) {
+                campaignStats[campaign] = {
+                    count: 0,
+                    total: 0
                 };
             }
+            
+            campaignStats[campaign].count++;
+            campaignStats[campaign].total += parseFloat(compra.monto);
+        });
+        
+        const sortedCampaigns = Object.entries(campaignStats)
+            .sort((a, b) => b[1].total - a[1].total);
+        
+        const tbody = document.getElementById('campaignExpensesBody');
+        tbody.innerHTML = '';
+        
+        sortedCampaigns.forEach(([name, stats]) => {
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                <td>${name}</td>
+                <td>${stats.count}</td>
+                <td>$${stats.total.toFixed(2)}</td>
+            `;
+            tbody.appendChild(row);
+        });
+    };
+}
+
+function updateRecentPurchases(period, specificDate = null) {
+    const now = specificDate || new Date();
+    
+    const transaction = db.transaction(['compras'], 'readonly');
+    const store = transaction.objectStore('compras');
+    const request = store.getAll();
+    
+    request.onsuccess = function() {
+        const compras = request.result || [];
+        
+        // Filtrar por período
+        let filteredCompras = filterByPeriod(compras, period, now);
+        
+        // Ordenar por fecha (más reciente primero) y limitar a 10
+        const recentPurchases = filteredCompras
+            .sort((a, b) => new Date(b.fechaEmisionCompleta) - new Date(a.fechaEmisionCompleta))
+            .slice(0, 10);
+        
+        const tbody = document.getElementById('recentPurchasesBody');
+        tbody.innerHTML = '';
+        
+        recentPurchases.forEach(compra => {
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                <td>${compra.fechaEmision}</td>
+                <td>${compra.proveedor}</td>
+                <td>$${compra.monto}</td>
+            `;
+            tbody.appendChild(row);
+        });
+    };
+}
+
+function filterByPeriod(compras, period, now) {
+    if (period === 'all') return compras;
+    
+    const today = new Date(now);
+    today.setHours(0, 0, 0, 0);
+    
+    if (period === 'day') {
+        return compras.filter(c => {
+            const compraDate = new Date(c.fechaEmisionCompleta);
+            return compraDate.getDate() === today.getDate() && 
+                   compraDate.getMonth() === today.getMonth() && 
+                   compraDate.getFullYear() === today.getFullYear();
+        });
+    } else if (period === 'week') {
+        const startOfWeek = new Date(today);
+        startOfWeek.setDate(today.getDate() - today.getDay() + (today.getDay() === 0 ? -6 : 1));
+        const endOfWeek = new Date(startOfWeek);
+        endOfWeek.setDate(startOfWeek.getDate() + 6);
+        
+        return compras.filter(c => {
+            const compraDate = new Date(c.fechaEmisionCompleta);
+            return compraDate >= startOfWeek && compraDate <= endOfWeek;
+        });
+    } else if (period === 'month') {
+        return compras.filter(c => {
+            const compraDate = new Date(c.fechaEmisionCompleta);
+            return compraDate.getMonth() === today.getMonth() && 
+                   compraDate.getFullYear() === today.getFullYear();
+        });
+    } else if (period === 'year') {
+        return compras.filter(c => {
+            const compraDate = new Date(c.fechaEmisionCompleta);
+            return compraDate.getFullYear() === today.getFullYear();
+        });
+    }
+    
+    return compras;
+}
 
 function updateTopBuyers() {
     const buyerStats = {};
