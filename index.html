@@ -343,6 +343,33 @@
             border-top: 2px solid #ddd;
             border-bottom: 2px solid #ddd;
         }
+
+.stat-card table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 5px;
+}
+
+.stat-card th {
+    font-weight: 500;
+    padding: 2px 0;
+    border-bottom: 1px solid #ddd;
+}
+
+.stat-card td {
+    padding: 2px 0;
+}
+
+#pendingDebtsList {
+    border-top: 1px solid #eee;
+    margin-top: 10px;
+    padding-top: 10px;
+}
+
+#pendingDebtsBody tr:last-child {
+    border-bottom: none;
+}
+
         
         @media (min-width: 768px) {
             body {
@@ -496,6 +523,30 @@
     <div class="text-muted" id="avgDailyExpenseSubtitle"></div>
 </div>
 
+<div class="stat-card">
+    <h3>Plan de Pago Personalizado</h3>
+    <div class="form-group">
+        <label for="customDueDate">Fecha objetivo:</label>
+        <input type="date" id="customDueDate" onchange="updateCustomPaymentPlan()">
+    </div>
+    <div class="value" id="customPendingStat">$0</div>
+    <div class="value" id="customDailyTargetStat">$0/día</div>
+    <div class="text-muted" id="customDailyTargetSubtitle"></div>
+    
+    <div id="pendingDebtsList" style="margin-top: 10px; max-height: 150px; overflow-y: auto; display: none;">
+        <h4 style="margin-bottom: 5px; font-size: 0.9rem;">Deudas consideradas:</h4>
+        <table style="width: 100%; font-size: 0.8rem;">
+            <thead>
+                <tr>
+                    <th style="text-align: left;">Proveedor</th>
+                    <th style="text-align: right;">Monto</th>
+                    <th style="text-align: right;">Vence</th>
+                </tr>
+            </thead>
+            <tbody id="pendingDebtsBody"></tbody>
+        </table>
+    </div>
+</div>
 
     </div>
     
@@ -877,6 +928,9 @@
                 // Inicializar selectores de fecha específica
                 initDateSelectors();
                 updateDashboard(currentPeriod);
+
+updateCustomPaymentPlan();
+
             }
 
             function showMainView() {
@@ -896,6 +950,11 @@
                     option.value = year;
                     option.textContent = year;
                     yearSelect.appendChild(option);
+
+// Inicializar selector de fecha personalizada
+const today = new Date();
+document.getElementById('customDueDate').value = today.toISOString().split('T')[0];
+
                 }
                 
                 // Establecer valores por defecto
@@ -1455,6 +1514,85 @@ function filterByPeriod(compras, period, now) {
     
     return compras;
 }
+
+function updateCustomPaymentPlan() {
+    const customDateInput = document.getElementById('customDueDate').value;
+    const pendingDebtsList = document.getElementById('pendingDebtsList');
+    const pendingDebtsBody = document.getElementById('pendingDebtsBody');
+    
+    if (!customDateInput) {
+        document.getElementById('customPendingStat').textContent = '$0';
+        document.getElementById('customDailyTargetStat').textContent = '$0/día';
+        document.getElementById('customDailyTargetSubtitle').textContent = '';
+        pendingDebtsList.style.display = 'none';
+        return;
+    }
+    
+    const customDate = new Date(customDateInput);
+    customDate.setHours(23, 59, 59, 999);
+    
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    if (customDate <= today) {
+        document.getElementById('customPendingStat').textContent = '$0';
+        document.getElementById('customDailyTargetStat').textContent = '$0/día';
+        document.getElementById('customDailyTargetSubtitle').textContent = 'La fecha debe ser futura';
+        pendingDebtsList.style.display = 'none';
+        return;
+    }
+    
+    const timeDiff = customDate.getTime() - today.getTime();
+    const daysRemaining = Math.ceil(timeDiff / (1000 * 3600 * 24));
+    
+    getAllFromStore('compras').then(compras => {
+        // Filtrar y ordenar compras pendientes
+        const pendingPurchases = compras
+            .filter(p => {
+                return !p.pagada && p.fechaVencimientoCompleta && 
+                       new Date(p.fechaVencimientoCompleta) <= customDate;
+            })
+            .sort((a, b) => new Date(a.fechaVencimientoCompleta) - new Date(b.fechaVencimientoCompleta));
+        
+        const totalPending = pendingPurchases.reduce((sum, p) => sum + parseFloat(p.monto), 0);
+        const dailyTarget = totalPending / daysRemaining;
+        
+        // Actualizar estadísticas
+        document.getElementById('customPendingStat').textContent = `$${totalPending.toFixed(2)}`;
+        document.getElementById('customDailyTargetStat').textContent = `$${dailyTarget.toFixed(2)}/día`;
+        
+        const formattedDate = customDate.toLocaleDateString('es-ES', { 
+            day: '2-digit', 
+            month: 'long', 
+            year: 'numeric' 
+        });
+        
+        document.getElementById('customDailyTargetSubtitle').textContent = 
+            `Para pagar todo antes del ${formattedDate} (${daysRemaining} días)`;
+        
+        // Actualizar lista de deudas
+        pendingDebtsBody.innerHTML = '';
+        
+        if (pendingPurchases.length > 0) {
+            pendingPurchases.forEach(compra => {
+                const row = document.createElement('tr');
+                row.style.borderBottom = '1px solid #eee';
+                row.innerHTML = `
+                    <td style="padding: 3px 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100px;">${compra.proveedor}</td>
+                    <td style="padding: 3px 0; text-align: right;">$${parseFloat(compra.monto).toFixed(2)}</td>
+                    <td style="padding: 3px 0; text-align: right;">${compra.fechaVencimiento || ''}</td>
+                `;
+                pendingDebtsBody.appendChild(row);
+            });
+            pendingDebtsList.style.display = 'block';
+        } else {
+            pendingDebtsList.style.display = 'none';
+        }
+    });
+}
+
+
+
 
 function updateTopBuyers() {
     const buyerStats = {};
@@ -2343,14 +2481,75 @@ function updateTopBuyers() {
                 });
             }
             
-   function refreshPurchasesView() {
+   function getVencimientoStatus(compra) {
+    const hoy = new Date();
+    hoy.setHours(0, 0, 0, 0);
+    
+    if (!compra.fechaVencimientoCompleta) {
+        return { grupo: 3, dias: Infinity }; // Sin vencimiento
+    }
+    
+    const vencimiento = new Date(compra.fechaVencimientoCompleta);
+    vencimiento.setHours(0, 0, 0, 0);
+    
+    const diffTime = vencimiento.getTime() - hoy.getTime();
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    
+    if (diffDays > 0) {
+        return { grupo: 1, dias: diffDays }; // Vencimiento futuro
+    } else {
+        return { grupo: 2, dias: Math.abs(diffDays) }; // Vencimiento pasado
+    }
+}
+
+function refreshPurchasesView() {
     const tbody = document.getElementById('purchasesBody');
     tbody.innerHTML = '';
 
     getAllFromStore('compras').then(compras => {
-        // Ordenar por fecha (más reciente primero)
-        const comprasOrdenadas = [...compras].sort((a, b) => 
-            new Date(b.fechaEmisionCompleta) - new Date(a.fechaEmisionCompleta));
+        const hoy = new Date();
+        hoy.setHours(0, 0, 0, 0);
+        
+        // Ordenar compras:
+        // 1. Con vencimiento futuro (más próximas primero)
+        // 2. Con vencimiento hoy
+        // 3. Con vencimiento pasado (más recientemente vencidas primero)
+        // 4. Sin vencimiento (más recientes primero)
+        const comprasOrdenadas = [...compras].sort((a, b) => {
+            // Obtener fechas de vencimiento (si existen)
+            const vencimientoA = a.fechaVencimientoCompleta ? new Date(a.fechaVencimientoCompleta) : null;
+            const vencimientoB = b.fechaVencimientoCompleta ? new Date(b.fechaVencimientoCompleta) : null;
+            
+            // Clasificar cada compra en un grupo de prioridad
+            const getPriority = (vencimiento) => {
+                if (!vencimiento) return 4; // Sin vencimiento (última prioridad)
+                
+                vencimiento.setHours(0, 0, 0, 0);
+                const diffTime = vencimiento.getTime() - hoy.getTime();
+                const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                
+                if (diffDays > 0) return 1; // Futuro (primera prioridad)
+                if (diffDays === 0) return 2; // Hoy (segunda prioridad)
+                return 3; // Pasado (tercera prioridad)
+            };
+            
+            const priorityA = getPriority(vencimientoA);
+            const priorityB = getPriority(vencimientoB);
+            
+            // Primero ordenar por grupo de prioridad
+            if (priorityA !== priorityB) {
+                return priorityA - priorityB;
+            }
+            
+            // Dentro del mismo grupo de prioridad:
+            if (priorityA === 4) {
+                // Sin vencimiento - ordenar por fecha de emisión (más reciente primero)
+                return new Date(b.fechaEmisionCompleta) - new Date(a.fechaEmisionCompleta);
+            } else {
+                // Con vencimiento - ordenar por fecha de vencimiento (más próxima primero)
+                return vencimientoA.getTime() - vencimientoB.getTime();
+            }
+        });
         
         let currentDateGroup = '';
         
@@ -2381,6 +2580,27 @@ function updateTopBuyers() {
                 tbody.appendChild(dateRow);
             }
             
+            // Determinar estilo para vencimientos
+            let vencimientoStyle = '';
+            let vencimientoText = compra.fechaVencimiento || 'N/A';
+            
+            if (compra.fechaVencimientoCompleta) {
+                const vencimiento = new Date(compra.fechaVencimientoCompleta);
+                vencimiento.setHours(0, 0, 0, 0);
+                
+                if (vencimiento < hoy) {
+                    const diasAtraso = Math.ceil((hoy - vencimiento) / (1000 * 60 * 60 * 24));
+                    vencimientoStyle = 'color: red; font-weight: bold;';
+                    vencimientoText += ` (Vencido hace ${diasAtraso} días)`;
+                } else if (vencimiento > hoy) {
+                    const diasRestantes = Math.ceil((vencimiento - hoy) / (1000 * 60 * 60 * 24));
+                    vencimientoText += ` (${diasRestantes} días)`;
+                } else {
+                    vencimientoStyle = 'color: orange; font-weight: bold;';
+                    vencimientoText += ' (Vence hoy)';
+                }
+            }
+            
             // Fila de la compra
             const row = document.createElement('tr');
             row.innerHTML = `
@@ -2388,7 +2608,7 @@ function updateTopBuyers() {
                 <td class="mobile-hidden">${compra.proveedor}</td>
                 <td>${compra.comprador}</td>
                 <td>$${compra.monto}</td>
-                <td>${compra.fechaVencimiento || 'N/A'}</td>
+                <td style="${vencimientoStyle}">${vencimientoText}</td>
                 <td>
                     <button class="${compra.pagada ? 'btn-success' : 'btn-warning'}" 
                             onclick="togglePaymentStatus(${compra.id}, ${compra.pagada || false})">
