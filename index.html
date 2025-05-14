@@ -470,6 +470,7 @@
         <button onclick="updateDashboard('year')" class="btn-primary">Año</button>
         <button onclick="updateDashboard('all')" class="btn-primary">Todo</button>
 	<button onclick="toggleProductOnlyMode()" class="btn-success" id="productOnlyBtn">Solo Facturas Productos</button>
+	<button onclick="toggleOtherDebtsMode()" class="btn-primary" id="otherDebtsBtn">Solo Otras Deudas</button>
     </div>
     
     <div class="date-selector" id="dateSelectorContainer" style="display: none;">
@@ -842,6 +843,7 @@
             let currentPeriod = 'month';
             let currentSpecificDate = null;
 	    let productOnlyMode = false;
+	    let otherDebtsMode = false; // Agrega esta línea	
             
             // Inicializar IndexedDB
             function initDB() {
@@ -1267,7 +1269,7 @@ document.getElementById('customDueDate').value = today.toISOString().split('T')[
     });
 }
 
-           function calculateStats(period, specificDate = null) {
+         function calculateStats(period, specificDate = null) {
     return new Promise((resolve) => {
         const now = specificDate || new Date();
         let filteredPurchases = [];
@@ -1282,6 +1284,8 @@ document.getElementById('customDueDate').value = today.toISOString().split('T')[
             // Aplicar filtro de tipo si está activo
             if (productOnlyMode) {
                 allPurchases = allPurchases.filter(p => p.tipoDeuda === 'Deuda Productos');
+            } else if (otherDebtsMode) {
+                allPurchases = allPurchases.filter(p => p.tipoDeuda === 'Otras Deudas');
             }
             
             // Filtrado por período (igual que antes)
@@ -1499,8 +1503,10 @@ function filterByPeriod(compras, period, now) {
     // Aplicar filtro de tipo si está activo
     if (productOnlyMode) {
         filteredCompras = filteredCompras.filter(c => c.tipoDeuda === 'Deuda Productos');
+    } else if (otherDebtsMode) {
+        filteredCompras = filteredCompras.filter(c => c.tipoDeuda === 'Otras Deudas');
     }
-    
+
     if (period === 'all') return filteredCompras;
     
     const today = new Date(now);
@@ -1578,6 +1584,8 @@ function updateCustomPaymentPlan() {
         
         if (productOnlyMode) {
             pendingPurchases = pendingPurchases.filter(p => p.tipoDeuda === 'Deuda Productos');
+        } else if (otherDebtsMode) {
+            pendingPurchases = pendingPurchases.filter(p => p.tipoDeuda === 'Otras Deudas');
         }
         
         pendingPurchases = pendingPurchases.sort((a, b) => new Date(a.fechaVencimientoCompleta) - new Date(b.fechaVencimientoCompleta));
@@ -1637,6 +1645,33 @@ function toggleProductOnlyMode() {
     updateDashboard(currentPeriod, currentSpecificDate);
 }
 
+function toggleOtherDebtsMode() {
+    otherDebtsMode = !otherDebtsMode;
+    const btn = document.getElementById('otherDebtsBtn');
+    
+    // Desactivar el otro modo si está activo
+    if (otherDebtsMode && productOnlyMode) {
+        productOnlyMode = false;
+        const productBtn = document.getElementById('productOnlyBtn');
+        productBtn.classList.remove('btn-success');
+        productBtn.classList.add('btn-primary');
+        productBtn.textContent = 'Solo Facturas Productos';
+    }
+    
+    if (otherDebtsMode) {
+        btn.classList.remove('btn-primary');
+        btn.classList.add('btn-success');
+        btn.textContent = '✅ Solo Otras Deudas';
+    } else {
+        btn.classList.remove('btn-success');
+        btn.classList.add('btn-primary');
+        btn.textContent = 'Solo Otras Deudas';
+    }
+    
+    // Forzar actualización completa del dashboard
+    updateDashboard(currentPeriod, currentSpecificDate);
+    updateCustomPaymentPlan(); // También actualizar el plan de pago personalizado
+}
 
 function updateTopBuyers() {
     const buyerStats = {};
@@ -1762,49 +1797,49 @@ function updateTopBuyers() {
             }
 
             function importExcelData() {
-                const file = document.getElementById('excelFile').files[0];
+    const file = document.getElementById('excelFile').files[0];
+    
+    if (!file) {
+        showToast("⚠️ Por favor seleccione un archivo", 'error');
+        return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        try {
+            const data = new Uint8Array(e.target.result);
+            const workbook = XLSX.read(data, { type: 'array' });
+            const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+            const jsonData = XLSX.utils.sheet_to_json(firstSheet, { defval: "" });
+            
+            let successCount = 0;
+            let errorCount = 0;
+            let errorMessages = [];
+
+            getAllFromStore('compras').then(existingPurchases => {
+                const maxId = existingPurchases.length > 0 ? 
+                    Math.max(...existingPurchases.map(p => p.id)) + 1 : 1;
                 
-                if (!file) {
-                    showToast("⚠️ Por favor seleccione un archivo", 'error');
-                    return;
-                }
-
-                const reader = new FileReader();
-                reader.onload = function(e) {
-                    try {
-                        const data = new Uint8Array(e.target.result);
-                        const workbook = XLSX.read(data, { type: 'array' });
-                        const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
-                        const jsonData = XLSX.utils.sheet_to_json(firstSheet, { defval: "" });
-                        
-                        let successCount = 0;
-                        let errorCount = 0;
-                        let errorMessages = [];
-
-                        // Obtener el último ID de compra para generar nuevos IDs
-                        getAllFromStore('compras').then(existingPurchases => {
-                            const maxId = existingPurchases.length > 0 ? 
-                                Math.max(...existingPurchases.map(p => p.id)) + 1 : 1;
+                const importPromises = jsonData.map((item, index) => {
+                    return new Promise((resolve, reject) => {
+                        try {
+                            // Validaciones básicas
+                            if (!item['Proveedor'] && !item['proveedor']) {
+                                throw new Error("Falta nombre del proveedor");
+                            }
                             
-                            const importPromises = jsonData.map((item, index) => {
-                                return new Promise((resolve, reject) => {
-                                    try {
-                                        // Validaciones básicas
-                                        if (!item['Proveedor'] && !item['proveedor']) {
-                                            throw new Error("Falta nombre del proveedor");
-                                        }
-                                        
-                                        if (!item['Monto'] && !item['monto']) {
-                                            throw new Error("Falta monto de la compra");
-                                        }
+                            if (!item['Monto'] && !item['monto']) {
+                                throw new Error("Falta monto de la compra");
+                            }
 
-                                        const nuevoId = maxId + index;
-                                        const proveedor = (item['Proveedor'] || item['proveedor'] || "").toString().trim();
-                                        const comprador = (item['Comprador'] || item['comprador'] || "").toString().trim();
-                                        const campana = (item['Campaña'] || item['campaña'] || "").toString().trim();
-                                        const monto = parseFloat(item['Monto'] || item['monto'] || 0);
-                                        const descripcion = (item['Descripción'] || item['descripcion'] || "").toString().trim();
-                                        
+                            const nuevoId = maxId + index;
+                            const proveedor = (item['Proveedor'] || item['proveedor'] || "").toString().trim();
+                            const comprador = (item['Comprador'] || item['comprador'] || "").toString().trim();
+                            const campana = (item['Campaña'] || item['campaña'] || "").toString().trim();
+                            const monto = parseFloat(item['Monto'] || item['monto'] || 0);
+                            const descripcion = (item['Descripción'] || item['descripcion'] || "").toString().trim();
+                            const tipoDeuda = (item['Tipo Deuda'] || item['tipoDeuda'] || "Deuda Productos").toString().trim();
+
                                         // Manejo de fechas
                                         let fechaEmision = item['Fecha Emisión'] || item['fechaEmision'] || item['Fecha'];
                                         let fechaVencimiento = item['Fecha Vencimiento'] || item['fechaVencimiento'];
@@ -1885,17 +1920,18 @@ function updateTopBuyers() {
                                         
                                         // Crear la compra
                                         const nuevaCompra = {
-                                            id: nuevoId,
-                                            proveedor,
-                                            comprador,
-                                            campana,
-                                            monto: monto.toFixed(2),
-                                            descripcion,
-                                            fechaEmision: fechaEmisionFormateada,
-                                            fechaVencimiento: fechaVencimientoFormateada,
-                                            fechaEmisionCompleta: fechaEmisionDate.toISOString(),
-                                            fechaVencimientoCompleta: fechaVencimientoDate ? fechaVencimientoDate.toISOString() : null
-                                        };
+                                id: nuevoId,
+                                proveedor,
+                                comprador,
+                                campana,
+                                monto: monto.toFixed(2),
+                                descripcion,
+                                fechaEmision: fechaEmisionFormateada,
+                                fechaVencimiento: fechaVencimientoFormateada,
+                                fechaEmisionCompleta: fechaEmisionDate.toISOString(),
+                                fechaVencimientoCompleta: fechaVencimientoDate ? fechaVencimientoDate.toISOString() : null,
+                                tipoDeuda
+                            };
                                         
                                         // Guardar la compra en IndexedDB
                                         addToStore('compras', nuevaCompra)
@@ -1907,128 +1943,126 @@ function updateTopBuyers() {
                                                 successCount++;
                                                 resolve();
                                             })
-                                            .catch(error => {
-                                                errorCount++;
-                                                errorMessages.push(`Fila ${index + 2}: ${error.message}`);
-                                                console.error(`Error al importar compra (fila ${index + 2}):`, error);
-                                                reject(error);
-                                            });
-                                    } catch (e) {
-                                        errorCount++;
-                                        errorMessages.push(`Fila ${index + 2}: ${e.message}`);
-                                        console.error(`Error al importar compra (fila ${index + 2}):`, e);
-                                        reject(e);
-                                    }
-                                });
-                            });
 
-                            Promise.all(importPromises)
-                                .then(() => {
-                                    // Mostrar resultados
-                                    let resultHTML = `<div class="alert alert-success">
-                                        ✅ Importación completada: ${successCount} registros importados</div>`;
-                                    
-                                    if (errorCount > 0) {
-                                        resultHTML += `<div class="alert alert-danger">
-                                            ❌ ${errorCount} errores:<br>${errorMessages.join('<br>')}</div>`;
-                                    }
-                                    
-                                    document.getElementById('importResults').innerHTML = resultHTML;
-                                    
-                                    // Actualizar vistas
-                                    refreshPurchasesView();
-                                    updateDashboard(currentPeriod);
-                                })
-                                .catch(error => {
-                                    console.error("Error en la importación:", error);
-                                });
-                        });
-                    } catch (error) {
-                        console.error("Error general al importar:", error);
-                        document.getElementById('importResults').innerHTML = `
-                            <div class="alert alert-danger">
-                                ❌ Error al procesar el archivo: ${error.message}
-                            </div>`;
-                    }
-                };
-                
-                reader.onerror = function() {
-                    document.getElementById('importResults').innerHTML = `
-                        <div class="alert alert-danger">
-                            ❌ Error al leer el archivo
-                        </div>`;
-                };
-                
-                reader.readAsArrayBuffer(file);
-            }
+                                             } catch (e) {
+                            errorCount++;
+                            errorMessages.push(`Fila ${index + 2}: ${e.message}`);
+                            console.error(`Error al importar compra (fila ${index + 2}):`, e);
+                            reject(e);
+                        }
+                    });
+                });
+
+              Promise.all(importPromises)
+                    .then(() => {
+                        // Mostrar resultados
+                        let resultHTML = `<div class="alert alert-success">
+                            ✅ Importación completada: ${successCount} registros importados</div>`;
+                        
+                        if (errorCount > 0) {
+                            resultHTML += `<div class="alert alert-danger">
+                                ❌ ${errorCount} errores:<br>${errorMessages.join('<br>')}</div>`;
+                        }
+                        
+                        document.getElementById('importResults').innerHTML = resultHTML;
+                        
+                        // Actualizar vistas
+                        refreshPurchasesView();
+                        updateDashboard(currentPeriod);
+                    })
+                    .catch(error => {
+                        console.error("Error en la importación:", error);
+                    });
+            });
+        } catch (error) {
+            console.error("Error general al importar:", error);
+            document.getElementById('importResults').innerHTML = `
+                <div class="alert alert-danger">
+                    ❌ Error al procesar el archivo: ${error.message}
+                </div>`;
+        }
+    };
+    
+    reader.onerror = function() {
+        document.getElementById('importResults').innerHTML = `
+            <div class="alert alert-danger">
+                ❌ Error al leer el archivo
+            </div>`;
+    };
+    
+    reader.readAsArrayBuffer(file);
+}
 
             function downloadPurchaseTemplate() {
-                const templateData = [
-                    ["Proveedor", "Comprador", "Campaña", "Monto", "Descripción", "Fecha Emisión", "Fecha Vencimiento"],
-                    ["Proveedor Ejemplo", "Juan Pérez", "Campaña 2023", "1500.50", "Compra de materiales", "01-01-2023", "15-01-2023"],
-                    ["Otro Proveedor", "María Gómez", "Promo Verano", "2500.75", "Insumos varios", "05-02-2023", "20-02-2023"]
-                ];
-                
-                const wb = XLSX.utils.book_new();
-                const ws = XLSX.utils.aoa_to_sheet(templateData);
-                XLSX.utils.book_append_sheet(wb, ws, "PlantillaCompras");
-                XLSX.writeFile(wb, "Plantilla_Compras.xlsx");
-            }
+    const templateData = [
+        ["Proveedor", "Comprador", "Tipo Deuda", "Campaña", "Monto", "Descripción", "Fecha Emisión", "Fecha Vencimiento"],
+        ["Proveedor Ejemplo", "Juan Pérez", "Deuda Productos", "Campaña 2023", "1500.50", "Compra de materiales", "01-01-2023", "15-01-2023"],
+        ["Otro Proveedor", "María Gómez", "Otras Deudas", "Promo Verano", "2500.75", "Insumos varios", "05-02-2023", "20-02-2023"]
+    ];
+    
+    const wb = XLSX.utils.book_new();
+    const ws = XLSX.utils.aoa_to_sheet(templateData);
+    XLSX.utils.book_append_sheet(wb, ws, "PlantillaCompras");
+    XLSX.writeFile(wb, "Plantilla_Compras.xlsx");
+}
 
-            function generateExcel() {
-                getAllFromStore('compras').then(compras => {
-                    if (compras.length === 0) {
-                        showToast("⚠️ No hay compras registradas", 'error');
-                        return;
-                    }
+           function generateExcel() {
+    getAllFromStore('compras').then(compras => {
+        if (compras.length === 0) {
+            showToast("⚠️ No hay compras registradas", 'error');
+            return;
+        }
 
-                    const wb = XLSX.utils.book_new();
-                    
-                    // Hoja de resumen
-                    const summaryData = [
-                        ["Resumen de Compras"],
-                        [],
-                        ["ID", "Fecha", "Proveedor", "Comprador", "Campaña", "Monto", "Descripción", "Vencimiento"]
-                    ];
+        const wb = XLSX.utils.book_new();
+        
+        // Hoja de resumen
+        const summaryData = [
+            ["Resumen de Compras"],
+            [],
+            ["ID", "Fecha", "Proveedor", "Comprador", "Tipo Deuda", "Campaña", "Monto", "Descripción", "Vencimiento"]
+        ];
 
-                    compras.forEach(compra => {
-                        summaryData.push([
-                            compra.id,
-                            compra.fechaEmision,
-                            compra.proveedor,
-                            compra.comprador,
-                            compra.campana || '',
-                            compra.monto,
-                            compra.descripcion || '',
-                            compra.fechaVencimiento || ''
-                        ]);
-                    });
+        compras.forEach(compra => {
+            summaryData.push([
+                compra.id,
+                compra.fechaEmision,
+                compra.proveedor,
+                compra.comprador,
+                compra.tipoDeuda || 'Deuda Productos',
+                compra.campana || '',
+                compra.monto,
+                compra.descripcion || '',
+                compra.fechaVencimiento || ''
+            ]);
+        });
 
-                    const wsSummary = XLSX.utils.aoa_to_sheet(summaryData);
-                    XLSX.utils.book_append_sheet(wb, wsSummary, "Resumen");
+        const wsSummary = XLSX.utils.aoa_to_sheet(summaryData);
+        XLSX.utils.book_append_sheet(wb, wsSummary, "Resumen");
 
-                    // Hojas por compra
-                    compras.forEach(compra => {
-                        const compraData = [
-                            ["Detalles de la Compra"],
-                            ["ID:", compra.id],
-                            ["Fecha:", compra.fechaEmision],
-                            ["Proveedor:", compra.proveedor],
-                            ["Comprador:", compra.comprador],
-                            ["Campaña:", compra.campana || ''],
-                            ["Monto:", compra.monto],
-                            ["Descripción:", compra.descripcion || ''],
-                            ["Vencimiento:", compra.fechaVencimiento || ''],
-                        ];
 
-                        const wsCompra = XLSX.utils.aoa_to_sheet(compraData);
-                        XLSX.utils.book_append_sheet(wb, wsCompra, `Compra ${compra.id}`);
-                    });
+                 // Hojas por compra
+        compras.forEach(compra => {
+            const compraData = [
+                ["Detalles de la Compra"],
+                ["ID:", compra.id],
+                ["Fecha:", compra.fechaEmision],
+                ["Proveedor:", compra.proveedor],
+                ["Comprador:", compra.comprador],
+                ["Tipo Deuda:", compra.tipoDeuda || 'Deuda Productos'],
+                ["Campaña:", compra.campana || ''],
+                ["Monto:", compra.monto],
+                ["Descripción:", compra.descripcion || ''],
+                ["Vencimiento:", compra.fechaVencimiento || ''],
+            ];
 
-                    XLSX.writeFile(wb, `Compras_${new Date().toISOString().split('T')[0]}.xlsx`);
-                    showToast("✅ Archivo Excel generado correctamente", 'success');
-                });
-            }
+            const wsCompra = XLSX.utils.aoa_to_sheet(compraData);
+            XLSX.utils.book_append_sheet(wb, wsCompra, `Compra ${compra.id}`);
+        });
+
+        XLSX.writeFile(wb, `Compras_${new Date().toISOString().split('T')[0]}.xlsx`);
+        showToast("✅ Archivo Excel generado correctamente", 'success');
+    });
+}
 
             // ========== FUNCIONES DEL PANEL ADMINISTRATIVO ========== //
 
