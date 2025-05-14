@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Deudas Facturas</title>
+    <title>Compras Facturas</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
@@ -448,7 +448,7 @@
 </head>
 <body>
     <div class="container">
-        <h1>📊 Deudas Facturas</h1>
+        <h1>📊 Compras Facturas</h1>
         
         <div class="button-group">
             <button onclick="openImportModal()" class="btn-secondary">📥 Importar Excel</button>
@@ -469,6 +469,7 @@
         <button onclick="updateDashboard('month')" class="btn-primary">Mes</button>
         <button onclick="updateDashboard('year')" class="btn-primary">Año</button>
         <button onclick="updateDashboard('all')" class="btn-primary">Todo</button>
+	<button onclick="toggleProductOnlyMode()" class="btn-success" id="productOnlyBtn">Solo Facturas Productos</button>
     </div>
     
     <div class="date-selector" id="dateSelectorContainer" style="display: none;">
@@ -646,6 +647,17 @@
             <option value="Sebastian">
         </datalist>
     </div>
+
+<div class="grid-2">
+    <div class="form-group">
+        <label for="tipoDeuda">Tipo de Deuda:</label>
+        <select id="tipoDeuda" required>
+            <option value="">Seleccione tipo</option>
+            <option value="Deuda Productos">Deuda Productos</option>
+            <option value="Otras Deudas">Otras Deudas</option>
+        </select>
+    </div>
+
     <div class="form-group">
         <label for="campana">Campaña:</label>
         <select id="campana" onchange="if(this.value=='otra'){this.nextElementSibling.style.display='inline-block';this.nextElementSibling.focus();}else{this.nextElementSibling.style.display='none';}">
@@ -829,6 +841,7 @@
             let expensesChart = null;
             let currentPeriod = 'month';
             let currentSpecificDate = null;
+	    let productOnlyMode = false;
             
             // Inicializar IndexedDB
             function initDB() {
@@ -928,10 +941,8 @@
                 // Inicializar selectores de fecha específica
                 initDateSelectors();
                 updateDashboard(currentPeriod);
-
-updateCustomPaymentPlan();
-
-            }
+		updateCustomPaymentPlan();
+}
 
             function showMainView() {
                 document.getElementById('dashboardSection').style.display = 'none';
@@ -1003,6 +1014,7 @@ document.getElementById('customDueDate').value = today.toISOString().split('T')[
     updateTopSuppliers(period, specificDate);
     updateCampaignExpenses(period, specificDate);
     updateRecentPurchases(period, specificDate);
+    updateCustomPaymentPlan(); // Asegurarse de actualizar también el plan de pago
 }
             
            function updateSpecificPeriod(period) {
@@ -1255,7 +1267,7 @@ document.getElementById('customDueDate').value = today.toISOString().split('T')[
     });
 }
 
-            function calculateStats(period, specificDate = null) {
+           function calculateStats(period, specificDate = null) {
     return new Promise((resolve) => {
         const now = specificDate || new Date();
         let filteredPurchases = [];
@@ -1265,7 +1277,12 @@ document.getElementById('customDueDate').value = today.toISOString().split('T')[
         const request = store.getAll();
         
         request.onsuccess = function() {
-            const allPurchases = request.result || [];
+            let allPurchases = request.result || [];
+            
+            // Aplicar filtro de tipo si está activo
+            if (productOnlyMode) {
+                allPurchases = allPurchases.filter(p => p.tipoDeuda === 'Deuda Productos');
+            }
             
             // Filtrado por período (igual que antes)
             if (period === 'day') {
@@ -1477,13 +1494,20 @@ function updateRecentPurchases(period, specificDate = null) {
 }
 
 function filterByPeriod(compras, period, now) {
-    if (period === 'all') return compras;
+    let filteredCompras = compras;
+    
+    // Aplicar filtro de tipo si está activo
+    if (productOnlyMode) {
+        filteredCompras = filteredCompras.filter(c => c.tipoDeuda === 'Deuda Productos');
+    }
+    
+    if (period === 'all') return filteredCompras;
     
     const today = new Date(now);
     today.setHours(0, 0, 0, 0);
     
     if (period === 'day') {
-        return compras.filter(c => {
+        return filteredCompras.filter(c => {
             const compraDate = new Date(c.fechaEmisionCompleta);
             return compraDate.getDate() === today.getDate() && 
                    compraDate.getMonth() === today.getMonth() && 
@@ -1495,24 +1519,24 @@ function filterByPeriod(compras, period, now) {
         const endOfWeek = new Date(startOfWeek);
         endOfWeek.setDate(startOfWeek.getDate() + 6);
         
-        return compras.filter(c => {
+        return filteredCompras.filter(c => {
             const compraDate = new Date(c.fechaEmisionCompleta);
             return compraDate >= startOfWeek && compraDate <= endOfWeek;
         });
     } else if (period === 'month') {
-        return compras.filter(c => {
+        return filteredCompras.filter(c => {
             const compraDate = new Date(c.fechaEmisionCompleta);
             return compraDate.getMonth() === today.getMonth() && 
                    compraDate.getFullYear() === today.getFullYear();
         });
     } else if (period === 'year') {
-        return compras.filter(c => {
+        return filteredCompras.filter(c => {
             const compraDate = new Date(c.fechaEmisionCompleta);
             return compraDate.getFullYear() === today.getFullYear();
         });
     }
     
-    return compras;
+    return filteredCompras;
 }
 
 function updateCustomPaymentPlan() {
@@ -1546,13 +1570,17 @@ function updateCustomPaymentPlan() {
     const daysRemaining = Math.ceil(timeDiff / (1000 * 3600 * 24));
     
     getAllFromStore('compras').then(compras => {
-        // Filtrar y ordenar compras pendientes
-        const pendingPurchases = compras
-            .filter(p => {
-                return !p.pagada && p.fechaVencimientoCompleta && 
-                       new Date(p.fechaVencimientoCompleta) <= customDate;
-            })
-            .sort((a, b) => new Date(a.fechaVencimientoCompleta) - new Date(b.fechaVencimientoCompleta));
+        // Filtrar compras pendientes con el filtro de tipo si está activo
+        let pendingPurchases = compras.filter(p => {
+            return !p.pagada && p.fechaVencimientoCompleta && 
+                   new Date(p.fechaVencimientoCompleta) <= customDate;
+        });
+        
+        if (productOnlyMode) {
+            pendingPurchases = pendingPurchases.filter(p => p.tipoDeuda === 'Deuda Productos');
+        }
+        
+        pendingPurchases = pendingPurchases.sort((a, b) => new Date(a.fechaVencimientoCompleta) - new Date(b.fechaVencimientoCompleta));
         
         const totalPending = pendingPurchases.reduce((sum, p) => sum + parseFloat(p.monto), 0);
         const dailyTarget = totalPending / daysRemaining;
@@ -1591,7 +1619,23 @@ function updateCustomPaymentPlan() {
     });
 }
 
-
+function toggleProductOnlyMode() {
+    productOnlyMode = !productOnlyMode;
+    const btn = document.getElementById('productOnlyBtn');
+    
+    if (productOnlyMode) {
+        btn.classList.remove('btn-primary');
+        btn.classList.add('btn-success');
+        btn.textContent = '✅ Solo Facturas Productos';
+    } else {
+        btn.classList.remove('btn-success');
+        btn.classList.add('btn-primary');
+        btn.textContent = 'Solo Facturas Productos';
+    }
+    
+    // Actualizar el dashboard con el filtro aplicado
+    updateDashboard(currentPeriod, currentSpecificDate);
+}
 
 
 function updateTopBuyers() {
@@ -2178,12 +2222,19 @@ function updateTopBuyers() {
 
             function savePurchase() {
                 // Validar campos requeridos
-                const proveedor = document.getElementById('proveedor').value.trim();
+                const tipoDeuda = document.getElementById('tipoDeuda').value;
+		const proveedor = document.getElementById('proveedor').value.trim();
                 const comprador = document.getElementById('comprador').value.trim();
                 const monto = parseFloat(document.getElementById('monto').value);
                 const fechaEmisionInput = document.getElementById('fechaEmision').value;
                 
-                if (!proveedor) {
+		if (!tipoDeuda) {
+     	   	showToast("⚠️ Por favor seleccione el tipo de deuda", 'error');
+        	document.getElementById('tipoDeuda').focus();
+        	return;
+    		}                
+
+		if (!proveedor) {
                     showToast("⚠️ Por favor ingrese el proveedor", 'error');
                     document.getElementById('proveedor').focus();
                     return;
@@ -2260,7 +2311,8 @@ function updateTopBuyers() {
                         fechaEmisionFormateada,
                         fechaVencimientoFormateada,
                         fechaEmision.toISOString(),
-                        fechaVencimiento ? fechaVencimiento.toISOString() : null
+                        fechaVencimiento ? fechaVencimiento.toISOString() : null,
+			tipoDeuda, // Nuevo parámetro
                     );
                 } else {
                     // Crear nueva compra
@@ -2273,12 +2325,13 @@ function updateTopBuyers() {
                         fechaEmisionFormateada,
                         fechaVencimientoFormateada,
                         fechaEmision.toISOString(),
-                        fechaVencimiento ? fechaVencimiento.toISOString() : null
+                        fechaVencimiento ? fechaVencimiento.toISOString() : null,
+			tipoDeuda,
                     );
                 }
             }
 
-            function updatePurchase(id, proveedor, comprador, campana, monto, descripcion, fechaEmision, fechaVencimiento, fechaEmisionCompleta, fechaVencimientoCompleta) {
+            function updatePurchase(id, proveedor, comprador, campana, monto, descripcion, fechaEmision, fechaVencimiento, fechaEmisionCompleta, fechaVencimientoCompleta, tipoDeuda) {
     const transaction = db.transaction(['compras'], 'readwrite');
     const store = transaction.objectStore('compras');
     const getRequest = store.get(parseInt(id));
@@ -2300,7 +2353,8 @@ function updateTopBuyers() {
             fechaEmision,
             fechaVencimiento,
             fechaEmisionCompleta,
-            fechaVencimientoCompleta
+            fechaVencimientoCompleta,
+	    tipoDeuda,	
         };
         
         const updateRequest = store.put(updatedCompra);
@@ -2330,7 +2384,7 @@ function updateTopBuyers() {
     };
 }
 
-            function createNewPurchase(proveedor, comprador, campana, monto, descripcion, fechaEmision, fechaVencimiento, fechaEmisionCompleta, fechaVencimientoCompleta) {
+            function createNewPurchase(proveedor, comprador, campana, monto, descripcion, fechaEmision, fechaVencimiento, fechaEmisionCompleta, fechaVencimientoCompleta, tipoDeuda) {
     const nuevaCompra = {
         proveedor,
         comprador,
@@ -2342,7 +2396,8 @@ function updateTopBuyers() {
         fechaEmisionCompleta,
         fechaVencimientoCompleta,
         pagada: false,
-        fechaPago: null
+        fechaPago: null,
+	tipoDeuda, // Nuevo campo
     };
 
     addToStore('compras', nuevaCompra)
@@ -2377,7 +2432,8 @@ function updateTopBuyers() {
                     }
 
                     // Llenar el formulario con los datos de la compra
-                    document.getElementById('proveedor').value = compra.proveedor;
+                    document.getElementById('tipoDeuda').value = compra.tipoDeuda || '';
+		    document.getElementById('proveedor').value = compra.proveedor;
                     document.getElementById('comprador').value = compra.comprador;
                     document.getElementById('campana').value = compra.campana || '';
                     document.getElementById('monto').value = compra.monto;
@@ -2683,6 +2739,7 @@ function togglePaymentStatus(compraId, currentStatus) {
                     let detalles = `📅 Fecha: ${compra.fechaEmision}\n`;
                     detalles += `🏢 Proveedor: ${compra.proveedor}\n`;
                     detalles += `👤 Comprador: ${compra.comprador}\n`;
+		    detalles += `📌 Tipo: ${compra.tipoDeuda || 'No especificado'}\n`; 
                     if (compra.campana) detalles += `🎯 Campaña: ${compra.campana}\n`;
                     detalles += `💰 Monto: $${compra.monto}\n`;
                     if (compra.fechaVencimiento) detalles += `⏳ Vencimiento: ${compra.fechaVencimiento}\n`;
