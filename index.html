@@ -550,6 +550,17 @@
     </div>
 </div>
 
+<div class="stat-card">
+    <h3>Ya Ahorrado</h3>
+    <div class="form-group">
+        <label for="savedAmount">Monto ahorrado:</label>
+        <input type="number" id="savedAmount" min="0" step="0.01" onchange="updateCustomPaymentPlan()">
+    </div>
+    <div class="value" id="remainingPendingStat">$0</div>
+    <div class="value" id="remainingDailyTargetStat">$0/día</div>
+    <div class="text-muted" id="remainingDailyTargetSubtitle"></div>
+</div>
+
     </div>
     
     <div class="chart-container">
@@ -952,33 +963,37 @@
                 refreshPurchasesView();
             }
 
-            function initDateSelectors() {
-                // Inicializar selector de años
-                const yearSelect = document.getElementById('specificYear');
-                yearSelect.innerHTML = '';
-                
-                const currentYear = new Date().getFullYear();
-                for (let year = currentYear; year >= currentYear - 5; year--) {
-                    const option = document.createElement('option');
-                    option.value = year;
-                    option.textContent = year;
-                    yearSelect.appendChild(option);
+         function initDateSelectors() {
+    // Inicializar selector de años
+    const yearSelect = document.getElementById('specificYear');
+    yearSelect.innerHTML = '';
+    
+    const currentYear = new Date().getFullYear();
+    for (let year = currentYear; year >= currentYear - 5; year--) {
+        const option = document.createElement('option');
+        option.value = year;
+        option.textContent = year;
+        yearSelect.appendChild(option);
+    }
+    
+    // Inicializar selector de fecha personalizada
+    const today = new Date();
+    document.getElementById('customDueDate').value = today.toISOString().split('T')[0];
+    
+    // INICIO: Añade esta línea justo aquí (después de inicializar customDueDate)
+    document.getElementById('savedAmount').value = '0';
+    // FIN: del nuevo código
+    
+    // Establecer valores por defecto
+    document.getElementById('specificDay').value = today.toISOString().split('T')[0];
+    
+    const weekNumber = getWeekNumber(today);
+    document.getElementById('specificWeek').value = `${today.getFullYear()}-W${weekNumber.toString().padStart(2, '0')}`;
+    
+    document.getElementById('specificMonth').value = `${today.getFullYear()}-${(today.getMonth() + 1).toString().padStart(2, '0')}`;
+}
 
-// Inicializar selector de fecha personalizada
-const today = new Date();
-document.getElementById('customDueDate').value = today.toISOString().split('T')[0];
 
-                }
-                
-                // Establecer valores por defecto
-                const today = new Date();
-                document.getElementById('specificDay').value = today.toISOString().split('T')[0];
-                
-                const weekNumber = getWeekNumber(today);
-                document.getElementById('specificWeek').value = `${today.getFullYear()}-W${weekNumber.toString().padStart(2, '0')}`;
-                
-                document.getElementById('specificMonth').value = `${today.getFullYear()}-${(today.getMonth() + 1).toString().padStart(2, '0')}`;
-            }
             
             function getWeekNumber(date) {
                 const firstDayOfYear = new Date(date.getFullYear(), 0, 1);
@@ -1547,6 +1562,7 @@ function filterByPeriod(compras, period, now) {
 
 function updateCustomPaymentPlan() {
     const customDateInput = document.getElementById('customDueDate').value;
+    const savedAmountInput = parseFloat(document.getElementById('savedAmount').value) || 0;
     const pendingDebtsList = document.getElementById('pendingDebtsList');
     const pendingDebtsBody = document.getElementById('pendingDebtsBody');
     
@@ -1554,6 +1570,9 @@ function updateCustomPaymentPlan() {
         document.getElementById('customPendingStat').textContent = '$0';
         document.getElementById('customDailyTargetStat').textContent = '$0/día';
         document.getElementById('customDailyTargetSubtitle').textContent = '';
+        document.getElementById('remainingPendingStat').textContent = '$0';
+        document.getElementById('remainingDailyTargetStat').textContent = '$0/día';
+        document.getElementById('remainingDailyTargetSubtitle').textContent = '';
         pendingDebtsList.style.display = 'none';
         return;
     }
@@ -1568,6 +1587,9 @@ function updateCustomPaymentPlan() {
         document.getElementById('customPendingStat').textContent = '$0';
         document.getElementById('customDailyTargetStat').textContent = '$0/día';
         document.getElementById('customDailyTargetSubtitle').textContent = 'La fecha debe ser futura';
+        document.getElementById('remainingPendingStat').textContent = '$0';
+        document.getElementById('remainingDailyTargetStat').textContent = '$0/día';
+        document.getElementById('remainingDailyTargetSubtitle').textContent = 'La fecha debe ser futura';
         pendingDebtsList.style.display = 'none';
         return;
     }
@@ -1591,11 +1613,17 @@ function updateCustomPaymentPlan() {
         pendingPurchases = pendingPurchases.sort((a, b) => new Date(a.fechaVencimientoCompleta) - new Date(b.fechaVencimientoCompleta));
         
         const totalPending = pendingPurchases.reduce((sum, p) => sum + parseFloat(p.monto), 0);
+        const remainingPending = Math.max(0, totalPending - savedAmountInput);
         const dailyTarget = totalPending / daysRemaining;
+        const remainingDailyTarget = remainingPending / daysRemaining;
         
-        // Actualizar estadísticas
+        // Actualizar estadísticas originales
         document.getElementById('customPendingStat').textContent = `$${totalPending.toFixed(2)}`;
         document.getElementById('customDailyTargetStat').textContent = `$${dailyTarget.toFixed(2)}/día`;
+        
+        // Actualizar estadísticas con ahorro
+        document.getElementById('remainingPendingStat').textContent = `$${remainingPending.toFixed(2)}`;
+        document.getElementById('remainingDailyTargetStat').textContent = `$${remainingDailyTarget.toFixed(2)}/día`;
         
         const formattedDate = customDate.toLocaleDateString('es-ES', { 
             day: '2-digit', 
@@ -1605,6 +1633,9 @@ function updateCustomPaymentPlan() {
         
         document.getElementById('customDailyTargetSubtitle').textContent = 
             `Para pagar todo antes del ${formattedDate} (${daysRemaining} días)`;
+        
+        document.getElementById('remainingDailyTargetSubtitle').textContent = 
+            `Con ahorro de $${savedAmountInput.toFixed(2)}`;
         
         // Actualizar lista de deudas
         pendingDebtsBody.innerHTML = '';
