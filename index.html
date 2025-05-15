@@ -2722,33 +2722,37 @@ function refreshPurchasesView() {
                 }
             }
             
-            // Fila de la compra
-            const row = document.createElement('tr');
-            row.innerHTML = `
-                <td>${compra.fechaEmision}</td>
-                <td class="mobile-hidden">${compra.proveedor}</td>
-                <td>${compra.comprador}</td>
-                <td>$${compra.monto}</td>
-                <td style="${vencimientoStyle}">${vencimientoText}</td>
-                <td>
-                    <button class="${compra.pagada ? 'btn-success' : 'btn-warning'}" 
-                            onclick="togglePaymentStatus(${compra.id}, ${compra.pagada || false})">
-                        ${compra.pagada ? '✅ Pagada' : '❌ Pendiente'}
-                    </button>
-                </td>
-                <td>
-                    <button class="btn-primary" onclick="viewPurchaseDetails(${compra.id})">👁️</button>
-                    <button class="btn-secondary" onclick="editPurchase(${compra.id})">✏️</button>
-                    <button class="btn-danger" onclick="deletePurchase(${compra.id})">❌</button>
-                </td>
-                <td>
-                    <button class="btn-warning" onclick="editPurchaseDate(${compra.id})">📅</button>
-                </td>
-            `;
-            tbody.appendChild(row);
+             // Fila de la compra
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${compra.fechaEmision}</td>
+                    <td class="mobile-hidden">${compra.proveedor}</td>
+                    <td>${compra.comprador}</td>
+                    <td>$${compra.monto}</td>
+                    <td style="${vencimientoStyle}">${vencimientoText}</td>
+                    <td>
+                        <button class="${compra.pagada ? 'btn-success' : 'btn-warning'}" 
+                                onclick="togglePaymentStatus(${compra.id}, ${compra.pagada || false})">
+                            ${compra.pagada ? '✅ Pagada' : '❌ Pendiente'}
+                        </button>
+                        ${compra.fechaVencimientoCompleta ? 
+                          `<button class="btn-primary" onclick="syncWithGoogleCalendar(${compra.id})" title="Sincronizar con Google Calendar">
+                              📅
+                          </button>` : ''}
+                    </td>
+                    <td>
+                        <button class="btn-primary" onclick="viewPurchaseDetails(${compra.id})">👁️</button>
+                        <button class="btn-secondary" onclick="editPurchase(${compra.id})">✏️</button>
+                        <button class="btn-danger" onclick="deletePurchase(${compra.id})">❌</button>
+                    </td>
+                    <td>
+                        <button class="btn-warning" onclick="editPurchaseDate(${compra.id})">📅</button>
+                    </td>
+                `;
+                tbody.appendChild(row);
+            });
         });
-    });
-}
+    }
 
 function togglePaymentStatus(compraId, currentStatus) {
     const transaction = db.transaction(['compras'], 'readwrite');
@@ -3089,6 +3093,52 @@ function togglePaymentStatus(compraId, currentStatus) {
                     document.body.removeChild(textarea);
                 }
             }
+
+ function syncWithGoogleCalendar(compraId) {
+        const transaction = db.transaction(['compras'], 'readonly');
+        const store = transaction.objectStore('compras');
+        const request = store.get(parseInt(compraId));
+        
+        request.onsuccess = function() {
+            const compra = request.result;
+            if (!compra) {
+                showToast("⚠️ Compra no encontrada", 'error');
+                return;
+            }
+
+            if (!compra.fechaVencimientoCompleta) {
+                showToast("⚠️ Esta compra no tiene fecha de vencimiento", 'error');
+                return;
+            }
+
+            const vencimientoDate = new Date(compra.fechaVencimientoCompleta);
+            const startDate = new Date(vencimientoDate);
+            startDate.setHours(9, 0, 0); // Establecer hora a las 9 AM
+            
+            const endDate = new Date(startDate);
+            endDate.setHours(10, 0, 0); // Duración de 1 hora
+            
+            // Formatear fechas para la URL de Google Calendar
+            const formatDate = (date) => {
+                return date.toISOString().replace(/-|:|\.\d\d\d/g, '');
+            };
+            
+            const title = `Vencimiento: ${compra.proveedor} - $${compra.monto}`;
+            const description = `Compra #${compra.id}\nProveedor: ${compra.proveedor}\nComprador: ${compra.comprador}\nMonto: $${compra.monto}\nDescripción: ${compra.descripcion || 'Ninguna'}`;
+            
+            const googleCalendarUrl = `https://www.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(title)}&dates=${formatDate(startDate)}/${formatDate(endDate)}&details=${encodeURIComponent(description)}&location=&sf=true&output=xml`;
+            
+            // Abrir en una nueva pestaña
+            window.open(googleCalendarUrl, '_blank');
+            
+            showToast("✅ Abriendo Google Calendar...", 'success');
+        };
+        
+        request.onerror = function(event) {
+            console.error("Error al obtener compra:", event.target.error);
+            showToast("⚠️ Error al obtener compra", 'error');
+        };
+    }
 
             function fallbackCopy(textarea) {
                 try {
